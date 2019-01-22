@@ -28,18 +28,12 @@ while True:
             data_loaded = json.loads(data)
             return_data = call([data_loaded['executable'], data_loaded['arguments']])
             serialized_dict = json.dumps(return_data)
-
-
-            message = serialized_dict
-
-            # import pdb
-            # pdb.set_trace()
-
+            
             print >>sys.stderr, 'received "%s"' % data_loaded
             # function executor 
             if data:
                 print >>sys.stderr, 'sending data back to the client'
-                connection.sendall(message)
+                connection.sendall(serialized_dict)
             else:
                 print >>sys.stderr, 'no more data from', client_address
                 break

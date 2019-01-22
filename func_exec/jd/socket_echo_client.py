@@ -34,20 +34,15 @@ usr_argument = raw_input("arguments? ")
 cu = cu(usr_executable, usr_argument)
 serialized_dict = json.dumps(cu)
 
-# import pdb
-# pdb.set_trace()
-
-message = serialized_dict
-
 
 try:
     
     # Send data
-    print >>sys.stderr, 'sending "%s"' % message
-    sock.sendall(message)
+    print >>sys.stderr, 'sending "%s"' % serialized_dict
+    sock.sendall(serialized_dict)
 
     amount_received = 0
-    amount_expected = len(message)
+    amount_expected = len(serialized_dict)
     
     while amount_received < amount_expected:
         data = sock.recv(1024)
