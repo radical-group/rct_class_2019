@@ -1,7 +1,7 @@
 import socket
 import sys
 import json
-from subprocess import call
+# from subprocess import call
 
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -26,7 +26,13 @@ while True:
         while True:
             data = connection.recv(1024)
             data_loaded = json.loads(data)
-            return_data = call([data_loaded['executable'], data_loaded['arguments']])
+            cmd = "{}({})".format(data_loaded['executable'], data_loaded['arguments'])
+
+            # The eval() function lets a Python program run Python code within 
+            # itself
+
+            return_data = eval(cmd)
+            # return_data = call([data_loaded['executable'], data_loaded['arguments']])
             serialized_dict = json.dumps(return_data)
             
             print >>sys.stderr, 'received "%s"' % data_loaded
