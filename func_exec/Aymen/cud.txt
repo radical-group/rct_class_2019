@@ -1,0 +1,3 @@
+[cud]
+executable = sqrt(4)
+arguments  = -all
