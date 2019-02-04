@@ -26,12 +26,17 @@ while True:
         while True:
             data = connection.recv(1024)
             data_loaded = json.loads(data)
-            cmd = "{}({})".format(data_loaded['executable'], data_loaded['arguments'])
+
+            
+            # cmd = "{}({})".format(data_loaded['executable'], data_loaded['arguments'])
 
             # The eval() function lets a Python program run Python code within 
             # itself
 
-            return_data = eval(cmd)
+            # return_data = eval(cmd)
+
+            # But we can still import modules and use them, with the builtin function __import__
+            return_data = eval("__import__('time')", {})
             # return_data = call([data_loaded['executable'], data_loaded['arguments']])
             serialized_dict = json.dumps(return_data)
             
