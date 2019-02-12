@@ -14,7 +14,7 @@
 
 what are the limitations of `eval` ?
 
-I think it depend on the case that we are trying to solve. But one of the important thigs that i noticed is the ```eval``` in ``` python 2 ``` and ```python 3 ``` is  example on that : 
+I think it depend on the case that we are trying to solve. But one of the important thigs that i noticed is the ```eval``` in ``` python 2 ``` and ```python 3 ``` is : 
 ```
 Python3
 
@@ -48,3 +48,85 @@ referenced in eval() can't come from enclosing functions. They must
 either be locals or globals.
 
 ### source : https://bugs.python.org/issue5242
+
+
+### RCT Class Assignemnt.
+## what are the differences between eval() and exec()
+
+Eval() : used to evalute single expression of python that generated dynamicaly example on that:
+
+      ```
+      >>> Num = 2
+      >>> calc = '42 * Num'
+      >>> res = eval(calc)
+      >>> res
+          84 
+      ```     
+          
+If we want to execute or evalute long expression that can contain ``` try ``` ,``` def ``` etc... example :
+
+       ```
+       >>> def aa(arg):
+                   {
+                   print("Called with %d" % arg)
+                   return arg * 8
+                   }         
+       >>> eval (aa(10))
+       >>> Called with 10 
+       >>> 80
+      
+       >>> exec (aa(10))
+       >>> Called with 10 
+       
+       ```
+  The code above indicates that eval can return value and exec can not .
+  
+  # Also ....
+  
+  What you cannot do in Pythons 2.7-3.6 with its compatibility hack, is to store the return value of ``exec`` into a variable:
+  
+    ``
+    Python 2.7
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> a = exec('print(42)')
+    File "<stdin>", line 1
+    a = exec('print(42)')
+           ^
+    SyntaxError: invalid syntax
+    ``
+  # But what we can do to solve this is combining compile, eval and exec.
+  
+     
+     std = eval(compile(cmd, '<string>', 'eval')) 
+     
+     or 
+ 
+     std = eval(compile(cmd, '<string>', 'exec')) 
+     
+ 
+   The limitation of combining eval with compile or exec comes from the actual python interpreter version example
+   (Another Python2/Python3 bug):
+
+   A source fragment containing 2 top-level statements is an error for the 'single', except in Python 2 there is a bug that sometimes      allows multiple toplevel statements in the code; only the first is compiled; the rest are ignored:
+     
+ 
+   
+     In Python 2.7.8:
+
+     >>> exec(compile('a = 5\na = 6', '<string>', 'single'))
+     >>> a
+         5
+   
+     And in Python 3.4.2:
+    
+
+    >>> exec(compile('a = 5\na = 6', '<string>', 'single'))
+    Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+    File "<string>", line 1
+    a = 5
+            ^
+    SyntaxError: multiple statements found while compiling a single statement
+ 
+### Source  https://stackoverflow.com/questions/2220699/whats-the-difference-between-eval-exec-and-compile
+    
