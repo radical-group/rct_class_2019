@@ -64,11 +64,23 @@ lines = 'a=1\nb=2\nc=a+b\nprint("c =",c)'
 
 ```
 
-The code inside exec is is able to access the scope outside the code string
+The code inside exec is is able to access the scope outside the code string.
 ```
 >>> outside_var = 'world'
 >>> exec('print("hello " + outside_var)')
 hello world
+
+```
+
+You can also access variables outside the string of code in eval, too.
+```
+>>> d_outside = dict()
+>>> def test_fun(d):
+...     d['accessed'] = 'inside test_fun'
+...
+>>> eval('test_fun(d_outside)')
+>>> d_outside
+{'accessed': 'inside test_fun'}
 
 ```
 
