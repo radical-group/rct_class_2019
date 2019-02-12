@@ -41,13 +41,15 @@ However it does not _return_ anything:
 >>> a = '5+9'
 >>> eval(a)
 14
->>> exec(a
+>>> exec(a)
 >>> 
 
 ```
 Exec seems to be able to accept larger blocks of code, like so:
 
-```lines = 'a=1\nb=2\nc=a+b\nprint("c =",c)'
+```
+lines = 'a=1\nb=2\nc=a+b\nprint("c =",c)'
+
 ```
 
 
