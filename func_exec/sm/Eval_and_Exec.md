@@ -1,7 +1,7 @@
 In addition to the limitations of exec and eval discussed last class (security, potentially difficult to debug, potentially cumbersome with imports, etc.) there 
 are some more things that warrant discussion:
 
-* eval()
+* `eval()`
 
 Eval interprets strings as code and _returns a value_
 However it _cannot_ execute functions inside of it. 
@@ -19,14 +19,14 @@ SyntaxError: invalid syntax
 ```
 
 It is very likely that our usecases might need us to use 
-python functions such as `print`, `sort`, `try/except` etc., and in those cases the usefulness of eval() is limited.
+python functions such as `print`, `sort`, `try/except` etc., and in those cases the usefulness of `eval()` is limited.
 
-A limitation of eval() that it needs to be fed a single expression/single line of code. 
+A limitation of `eval()` that it needs to be fed a single expression/single line of code. 
 
 
-* exec():
+* `exec()`:
 
-Exec also interprets string as code, but does not return a value.
+`exec()` also interprets string as code, but does not return a value.
 It can execute functions within it. 
 
 ```
@@ -45,7 +45,7 @@ However it does not _return_ anything:
 >>> 
 
 ```
-Exec seems to be able to accept larger blocks of code, like so:
+`exec()` seems to be able to accept larger blocks of code, like so:
 
 ```
 lines = 'a=1\nb=2\nc=a+b\nprint("c =",c)'
@@ -53,9 +53,9 @@ lines = 'a=1\nb=2\nc=a+b\nprint("c =",c)'
 ```
 
 
-If we want our python method to return an object, exec() cannot deliver.
+If we want our python method to return an object, `exec()` cannot deliver.
 
-* compile()
+* `compile()`
 
 `compile()` is basically a 2 step exec/eval. It just converts the string to a python code but does not execute.
 It must then be run with `exec()` or `eval()`.
