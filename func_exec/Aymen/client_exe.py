@@ -1,12 +1,8 @@
 #!/bin/python
 import sys
 import os
-import time
 import argparse
-import ConfigParser
-from subprocess import Popen, PIPE
 import  socket
-import subprocess
 import json
 
 class Dirty_client():
@@ -21,15 +17,25 @@ class Dirty_client():
     
 
     def serial_send(self):
-
-        path= '/home/aymenlinux/RCT-EXE/cud.txt'
-        config = ConfigParser.ConfigParser()
-        config.read(path)
-        prog=config.get('cud', 'executable')
-        #prog1=config.get('cud','arguments')
-        shell = prog
-        self.conn.send(shell)
-        print 'Data sent !\n'
+	
+	dic = { "modules" :"numpy","executable" : "numpy.sin(2+1)","arguments":" "}
+	modl    = dic['modules']
+        execut  = dic['executable']
+        args    = dic['arguments']
+	print 'Sent Module   :' ,modl
+	print 'Sent Executable   :' ,execut
+	print 'Sent Arguments   :' ,args
+	if not args:
+ 
+        	cud = [(modl),(execut)]
+		serial = json.dumps(cud)
+        	self.conn.sendall(serial)
+        	print 'Data sent !\n'
+	else :
+		cud=[(modl),(execut),(args)]
+        	serial = json.dumps(cud)
+        	self.conn.sendall(serial)
+        	print 'Data sent !\n'
 
     def serial_recv(self):
 
