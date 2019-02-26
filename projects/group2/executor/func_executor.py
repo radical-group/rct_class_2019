@@ -33,9 +33,8 @@ class func_executor():
     def import_module(self,mod):
 
         exec "import {}".format(mod)
-    	print name,'module loaded\n'
+    	print mod,'module loaded\n'
 
-	return mod
 	
     def executor(self):
 	
