@@ -13,10 +13,8 @@ class fifo_scheduler(object):
     def queue_fifo(self, units):
 
         # dummy cus to mimic cu description
-        self.cus = OrderedDict((x,x) for x in reversed(range(10)) )
-
+        self.cus = OrderedDict((x,x) for x in reversed(range(10)))
         q = Queue.Queue()
-
         for i in self.cus:
             q.put(i)
 

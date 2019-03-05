@@ -7,18 +7,24 @@ import example_compute
 import executor
 from multiprocessing import Pool
 
+
+PROCESSES = 10 
+TASK_COUNT = 10 
+
 class Worker(object):
     mq = "zmq"
     mq = "rabbitmq"
     q_name = "task_queue"
 
     def __init__(self):
+        # Assign ID to each worker
         self.id = random.randrange(1,10005)
         #print ("I am worker #%s" % (self.id))
         func = getattr(self, "init_{}".format(self.mq))
         func()
 
     def init_zmq(self):
+        # Create zmq context and tcp receiver/sender connections 
         self.context = zmq.Context()
         self.receiver = self.context.socket(zmq.PULL)
         self.receiver.connect("tcp://127.0.0.1:5557")
@@ -27,6 +33,7 @@ class Worker(object):
         self.sender.connect("tcp://127.0.0.1:5558")
 
     def init_rabbitmq(self):
+        # create RMQ channel 
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         channel = connection.channel()
         channel.queue_declare(queue=self.q_name, durable=False)
@@ -67,7 +74,17 @@ class Worker(object):
         return result
 
 if __name__ == "__main__":
-    p=Pool(4)
+
+    # instance 1) for each task we have one worker: assume 8 workers, 8 cpus
+
+    # instance 2) we assign as many workers as we have tasks but only 
+    # allow execution if enough cores available: cpu_count()
+  
+
+    CPUS = cpu_count()
+    p=Pool(PROCESSES)
+    print 'Creating pool with {} processes\n'.format(PROCESSES)
+
     obj = Worker()
     results = []
     for i in range(10):
@@ -76,7 +93,7 @@ if __name__ == "__main__":
         msg['uid'] = obj.id
         r = p.apply_async(obj.function_executor, args=(msg,))
         results.append(r)
-    # Collect results and sendback
+    # Collect results and send back
     for i in results:
         x = (i.get())
         obj.send(x)

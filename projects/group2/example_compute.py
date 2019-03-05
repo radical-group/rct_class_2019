@@ -1,6 +1,8 @@
 import numpy as np
 import time
 
+# Example of a task function 
+
 def compute_flops(loopcount, MAT_N):
     
     A = np.arange(MAT_N**2, dtype=np.float64).reshape(MAT_N, MAT_N)

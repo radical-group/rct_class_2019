@@ -48,7 +48,8 @@ if __name__ == "__main__":
 
     task = { 
             'function' : "example_compute.compute_flops",
-            'params': [1, 2048]
+            'params': [1, 2048],
+            'resources': 1
             }
 
     obj = Dispatcher()
