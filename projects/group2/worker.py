@@ -5,7 +5,7 @@ import json
 import random
 import example_compute
 import executor
-from multiprocessing import Pool
+import multiprocessing as mp
 
 
 PROCESSES = 10 
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     # allow execution if enough cores available: cpu_count()
   
 
-    CPUS = cpu_count()
-    p=Pool(PROCESSES)
+    CPUS = mp.cpu_count()
+    p = mp.Pool(PROCESSES)
     print 'Creating pool with {} processes\n'.format(PROCESSES)
 
     obj = Worker()
