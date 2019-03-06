@@ -6,12 +6,13 @@
 
 ### Implementation details:
 
-* Define a set of functions, along with params and resources in `dispatcher.py` 
+* Define a set of functions, along with params and resources (cores) in `dispatcher.py` 
 
 ```python
 task = { 
             'function' : "example_compute.compute_flops",
             'params': [1, 2048],
+            'resources': 1
             
             }
 ```
