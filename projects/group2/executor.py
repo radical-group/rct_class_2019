@@ -31,6 +31,7 @@ class pythonExecutor(object):
         if isinstance(self.params, list):
             params = [ str (x) for x in self.params ]
         sep = self.function.split(".", 1)
+        function = self.function
         if len(sep) > 1:
             module = __import__(sep[0])
             function = "{}.{}".format("module", sep[1])
