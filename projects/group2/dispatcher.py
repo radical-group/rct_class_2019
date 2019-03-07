@@ -1,10 +1,14 @@
 import zmq
 import pika
 import json
+import example_compute
+import Task
+
+TOTAL_TASKS = 2 
 
 class Dispatcher(object):
     mq = "zmq"
-    mq = "rabbitmq"
+    # mq = "rabbitmq"
     q_name = "task_queue"
 
     def __init__(self):
@@ -46,11 +50,19 @@ class Dispatcher(object):
 
 if __name__ == "__main__":
 
-    task = { 
-            'function' : "example_compute.compute_flops",
-            'params': [1, 2048],
-            'resources': 1
-            }
+    tasks = [
+                Task(function  = "example_compute.compute_flops", 
+                  params    = "[1, 2048]",
+                  resources = 1), 
+                Task(function  = "example_compute.compute_flops", 
+                  params    = "[1, 4096]",
+                  resources = 2), 
+                Task(function  = "example_compute.compute_flops", 
+                  params    = "[1, 8192]",
+                  resources = 4)
+            ]  
 
     obj = Dispatcher()
-    obj.send(task)
+    tasks.sort(key=attrgetter('resources'))
+    for task in range(tasks):
+        obj.send(task)

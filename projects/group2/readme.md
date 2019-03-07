@@ -17,3 +17,18 @@ task = {
             }
 ```
 
+* Note: `dispatcher.py` can be executed with either `zmq` or `rabbitmq`.
+
+* `dispatcher.py` will sort the messages (tasks) based on priority, i.e., 
+based on increasing order of resource requirements and send the messages 
+to `worker.py` 
+
+### Implementation Notes: 
+
+* `set_argument()` takes the user input (function and parameters) and parses 
+the string, along with the `__import__` modules to the `function_executor()` 
+
+* `worker.py` pulls the messages in the order in which the tasks were received, 
+executes the command defined by the task, and sends the output back to client
+
+

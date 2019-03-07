@@ -13,7 +13,7 @@ TASK_COUNT = 10
 
 class Worker(object):
     mq = "zmq"
-    mq = "rabbitmq"
+    # mq = "rabbitmq"
     q_name = "task_queue"
 
     def __init__(self):
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     obj = Worker()
     results = []
-    for i in range(10):
+    for i in range(TASK_COUNT):
         # Receive 1 message
         msg = obj.recv()
         msg['uid'] = obj.id

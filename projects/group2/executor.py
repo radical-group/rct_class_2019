@@ -8,7 +8,7 @@ class pythonExecutor(object):
     e_engine = "eval"
     function = None
     params = None
-    resources = None
+    
 
     def set_argument(self):
         parser = argparse.ArgumentParser("Python function executor")
