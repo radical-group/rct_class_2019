@@ -2,7 +2,8 @@ import zmq
 import pika
 import json
 import example_compute
-import Task
+from Task import Task
+from operator import attrgetter
 
 TOTAL_TASKS = 2 
 
@@ -28,6 +29,8 @@ class Dispatcher(object):
         self.mq_socket = channel
 
     def send(self, task_msg, iterate=10):
+        # Type casting; Task -> python dict
+        task_msg = task_msg.__dict__
         # Start your result manager and workers before you start your dispatchers
         for idx in range(iterate):
             task_msg['tid'] = idx
@@ -52,17 +55,17 @@ if __name__ == "__main__":
 
     tasks = [
                 Task(function  = "example_compute.compute_flops", 
-                  params    = "[1, 2048]",
+                  params    = [1, 2048],
                   resources = 1), 
                 Task(function  = "example_compute.compute_flops", 
-                  params    = "[1, 4096]",
+                  params    = [1, 4096],
                   resources = 2), 
                 Task(function  = "example_compute.compute_flops", 
-                  params    = "[1, 8192]",
+                  params    = [1, 8192],
                   resources = 4)
             ]  
 
     obj = Dispatcher()
     tasks.sort(key=attrgetter('resources'))
-    for task in range(tasks):
+    for task in tasks:
         obj.send(task)

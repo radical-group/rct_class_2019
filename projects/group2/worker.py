@@ -1,3 +1,4 @@
+import sys
 import time
 import zmq
 import pika
@@ -6,10 +7,11 @@ import random
 import example_compute
 import executor
 import multiprocessing as mp
-
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 PROCESSES = 10 
-TASK_COUNT = 10 
+TASK_COUNT = 10
 
 class Worker(object):
     mq = "zmq"
@@ -83,7 +85,7 @@ if __name__ == "__main__":
 
     CPUS = mp.cpu_count()
     p = mp.Pool(PROCESSES)
-    print 'Creating pool with {} processes\n'.format(PROCESSES)
+    print ('Creating pool with {} processes\n'.format(PROCESSES))
 
     obj = Worker()
     results = []
@@ -96,4 +98,5 @@ if __name__ == "__main__":
     # Collect results and send back
     for i in results:
         x = (i.get())
-        obj.send(x)
+        logging.debug(x)
+        #obj.send(x)

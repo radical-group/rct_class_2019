@@ -3,6 +3,8 @@ import time
 import argparse
 import pickle
 import example_compute
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 class pythonExecutor(object):
     e_engine = "eval"
@@ -36,6 +38,7 @@ class pythonExecutor(object):
             module = __import__(sep[0])
             function = "{}.{}".format("module", sep[1])
         cmd = "{}({})".format(function, ",".join(params))
+        logging.debug(cmd)
         return eval(cmd)
 
     def magic_execute_exec(self):
