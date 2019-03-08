@@ -3,29 +3,33 @@ import time
 import zmq
 import pika
 import json
-import random
-import example_compute
-import executor
+import uuid
+from executor import function_executor as fexec
 import multiprocessing as mp
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 PROCESSES = 10 
-TASK_COUNT = 10
+TASK_COUNT = 100
 
 class Worker(object):
-    mq = "zmq"
-    # mq = "rabbitmq"
+    """Fetches a Task message from a messaging system 
+
+    
+    
+    """
+    #mq = "zmq" or "rabbitmq"
     q_name = "task_queue"
 
-    def __init__(self):
+    def __init__(self, mq_choice="zmq"):
+        self.mq = mq_choice
         # Assign ID to each worker
-        self.id = random.randrange(1,10005)
+        self.uid = str(uuid.uuid4())
         #print ("I am worker #%s" % (self.id))
-        func = getattr(self, "init_{}".format(self.mq))
+        func = getattr(self, "_init_{}".format(self.mq))
         func()
 
-    def init_zmq(self):
+    def _init_zmq(self):
         # Create zmq context and tcp receiver/sender connections 
         self.context = zmq.Context()
         self.receiver = self.context.socket(zmq.PULL)
@@ -34,7 +38,7 @@ class Worker(object):
         self.sender = self.context.socket(zmq.PUSH)
         self.sender.connect("tcp://127.0.0.1:5558")
 
-    def init_rabbitmq(self):
+    def _init_rabbitmq(self):
         # create RMQ channel 
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         channel = connection.channel()
@@ -42,38 +46,30 @@ class Worker(object):
         self.receiver = channel
 
     def recv(self):
-        func = getattr(self, "recv_{}".format(self.mq))
+        """Pulls a message from a queue"""
+        func = getattr(self, "_recv_{}".format(self.mq))
         return func()
 
-    def recv_zmq(self):
+    def _recv_zmq(self):
         return self.receiver.recv_json()
 
-    def recv_rabbitmq(self):
+    def _recv_rabbitmq(self):
         method_frame, header_frame, body = self.receiver.basic_get(self.q_name)
         if method_frame:
             self.receiver.basic_ack(method_frame.delivery_tag)
             return json.loads(body)
 
     def send(self, msg):
-        func = getattr(self, "send_{}".format(self.mq))
+        """Pushes a (result) message to a separate queue"""
+        func = getattr(self, "_send_{}".format(self.mq))
         func(msg)
 
-    def send_zmq(self, msg):
+    def _send_zmq(self, msg):
         self.sender.send_json(msg)
 
-    def send_rabbitmq(self, msg):
+    def _send_rabbitmq(self, msg):
         #TBD
         print (msg)
-
-    @staticmethod
-    def function_executor(work):
-        pe = executor.pythonExecutor()
-        pe.function = work['function']
-        pe.params = work['params']
-        res = pe.executor()
-        result = { 'worker_id' :  work['uid'], 'task_id' : work['tid'],
-                'result': res }
-        return result
 
 if __name__ == "__main__":
 
@@ -89,14 +85,20 @@ if __name__ == "__main__":
 
     obj = Worker()
     results = []
-    for i in range(TASK_COUNT):
+    #for i in range(TASK_COUNT):
+    # TODO: (hlee) timeout for loop
+    while True:
         # Receive 1 message
         msg = obj.recv()
-        msg['uid'] = obj.id
-        r = p.apply_async(obj.function_executor, args=(msg,))
-        results.append(r)
+        msg['worker_id'] = obj.uid
+        r = p.apply_async(fexec, args=(msg,), callback=logging.debug)
+        #results.append(r)
+    """
+    TODO: (hlee) callback function
     # Collect results and send back
     for i in results:
         x = (i.get())
         logging.debug(x)
         #obj.send(x)
+    """
+

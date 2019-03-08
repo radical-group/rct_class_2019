@@ -1,16 +1,28 @@
+import os
 import sys
 import time
 import argparse
 import pickle
 import example_compute
 import logging
+from datetime import datetime
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-class pythonExecutor(object):
+class PythonExecutor(object):
+    """Executes a Python function from parsing user string
+
+    Attributes:
+        e_engine: Executor method, eval() is default
+        function: String of a function descriptor
+        params: Function parameters to feed
+    """
+
     e_engine = "eval"
-    function = None
-    params = None
     
+
+    def __init__(self, function=None, params=None):
+        self.function = function
+        self.params = params
 
     def set_argument(self):
         parser = argparse.ArgumentParser("Python function executor")
@@ -25,10 +37,10 @@ class pythonExecutor(object):
             sys.exit()
 
     def executor(self):
-        func = getattr(self, "magic_execute_{}".format(self.e_engine))
+        func = getattr(self, "_magic_execute_{}".format(self.e_engine))
         return func()
 
-    def magic_execute_eval(self):
+    def _magic_execute_eval(self):
         params =  self.params
         if isinstance(self.params, list):
             params = [ str (x) for x in self.params ]
@@ -38,22 +50,38 @@ class pythonExecutor(object):
             module = __import__(sep[0])
             function = "{}.{}".format("module", sep[1])
         cmd = "{}({})".format(function, ",".join(params))
-        logging.debug(cmd)
+        logging.debug("eval:{}({})".format(self.function, ",".join(params)))
         return eval(cmd)
 
-    def magic_execute_exec(self):
+    def _magic_execute_exec(self):
         cmd = "{}({})".format(self.function, ",".join(self.params))
         exec("res={}".format(cmd))
         return res
 
-    def magic_execute_pickle(self):
+    def _magic_execute_pickle(self):
         od1 = pickle.dumps(self.function)
         return od1(self.params)
 
-if __name__ == "__main__":
 
-    obj = pythonExecutor()
-    obj.set_argument()
-    res = obj.executor()
-    print ("result: {} of function ({})".format(res, obj.function))
+
+def function_executor(work):
+    """Executes a parameter using PythonExecutor
+
+    Args:
+        work (dict): a Task dictionary with 'function' and 'params' required
+        keys
+
+    Returns:
+        A dictionary with a return value of a function
+    """
+
+    pe = PythonExecutor(function=work['function'],params=work['params'])
+    result = { 
+            'pid': os.getpid(), 
+            'executed': str(datetime.now()), 
+            'result': pe.executor(),
+            'completed': str(datetime.now()) }
+    return { **result, **work } 
+
+
 
