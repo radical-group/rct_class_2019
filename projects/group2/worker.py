@@ -7,6 +7,7 @@ import uuid
 from executor import function_executor as fexec
 import multiprocessing as mp
 import logging
+import socket
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 PROCESSES = 10 
@@ -25,7 +26,8 @@ class Worker(object):
         self.mq = mq_choice
         # Assign ID to each worker
         self.uid = str(uuid.uuid4())
-        #print ("I am worker #%s" % (self.id))
+        # hostname of worker
+        self.hostname = socket.gethostname()
         func = getattr(self, "_init_{}".format(self.mq))
         func()
 
@@ -91,6 +93,7 @@ if __name__ == "__main__":
         # Receive 1 message
         msg = obj.recv()
         msg['worker_id'] = obj.uid
+        msg['worker_hostname'] = obj.hostname
         r = p.apply_async(fexec, args=(msg,), callback=logging.debug)
         #results.append(r)
     """
