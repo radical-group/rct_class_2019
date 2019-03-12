@@ -16,8 +16,13 @@ TASK_COUNT = 100
 class Worker(object):
     """Fetches a Task message from a messaging system 
 
-    
-    
+    Attributes:
+        mq: messaging system name, zmq or rabbitmq
+        q_name: A queue name to push a Task message
+        uid: a unique identifier of Worker object
+        hostname: a system hostname
+        receiver: a PULL socket of messaging system
+        sender: a PUSH socket of messaging system
     """
     #mq = "zmq" or "rabbitmq"
     q_name = "task_queue"
