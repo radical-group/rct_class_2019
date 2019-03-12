@@ -81,7 +81,7 @@ def function_executor(work):
             # 'executed': str(datetime.now()), 
             'executed' : str(time.time()),
             # 'result': pe.executor(),
-            'result' : str(time.time()),
+            'result' : pe.executor(),
             # 'completed': str(datetime.now()) 
             'completed' : str(time.time())}
     return { **result, **work } 

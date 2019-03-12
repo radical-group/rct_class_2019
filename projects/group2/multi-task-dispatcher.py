@@ -4,6 +4,7 @@ import sys
 import json
 import uuid
 import logging
+import time
 from Task import Task
 from operator import attrgetter
 from datetime import datetime
@@ -56,7 +57,7 @@ class Dispatcher(object):
         # Start your result manager and workers before you start your dispatchers
         for idx in range(iterate):
             task_msg['task_id'] = self.new_tid()
-            task_msg['scheduled'] = str(datetime.now())
+            task_msg['scheduled'] = str(time.time())
             logging.debug("msg pushed:{} to {}".format(task_msg, self.q_name))
             self.mq_send(task_msg)
 
