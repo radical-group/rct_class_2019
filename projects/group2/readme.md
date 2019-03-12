@@ -1,8 +1,32 @@
+### Requirement
+
+* Python packages
+  - zmq (default)
+  - pika
+
+* Python 3+
+
 ### Execution instruction:
 
-`python executor.py --function min --params "1,2"`
-* The function executor executes the function `min` of the `params` (1,2)
+#### Function Executor CLI (standalone)
 
+`python executor_cli.py --function min --params 1 2`
+* The function executor invokes the function `min()` of the `params` (1,2) (iterable)
+
+`python executor_cli.py --function numpy.min --params [1,2]`
+* The function executor invokes the function `numpy.min()` of the `params` [1,2] (list)
+
+* Note that a function should be either built-in or callable from an installed module, no alias is allowed e.g. `numpy as np`. 
+
+#### Dispatcher and Worker (multi-processing)
+
+Two separate terminals are necessary.
+
+(Terminal 1)
+`python worker.py` # Starts a worker to pull Task message(s)
+
+(Terminal 2)
+`python dispatcher.py` # Starts a dispatcher to push Task message(s)
 
 ### Implementation details:
 

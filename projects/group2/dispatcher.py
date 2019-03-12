@@ -18,6 +18,7 @@ class Dispatcher(object):
         mq: messaging system name, zmq or rabbitmq
         q_name: A queue name to push a Task message
         mq_socket: a socket of messaging system
+        tid: a task id (auto-increment)
     """
     uid = str(uuid.uuid4())
     #mq = "zmq" or "rabbitmq"
