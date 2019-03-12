@@ -9,7 +9,7 @@ from operator import attrgetter
 from datetime import datetime
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-TOTAL_TASKS = 10
+TOTAL_TASKS = 100
 
 class Dispatcher(object):
     """Dispater of tasks by messaging system

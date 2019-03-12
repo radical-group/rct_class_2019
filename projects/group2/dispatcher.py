@@ -10,7 +10,6 @@ from datetime import datetime
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-TOTAL_TASKS = 2 
 
 class Dispatcher(object):
     """Dispater of tasks by messaging system
@@ -91,7 +90,10 @@ if __name__ == "__main__":
                   resources = 2), 
                 Task(function  = "example_compute.compute_flops", 
                   params    = [1, 8192],
-                  resources = 4)
+                  resources = 4),
+                Task(function  = "example_compute.compute_flops", 
+                  params    = [1, 8192],
+                  resources = 8)
             ]  
 
     obj = Dispatcher()

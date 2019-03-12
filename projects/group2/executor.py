@@ -50,7 +50,7 @@ class PythonExecutor(object):
             module = __import__(sep[0])
             function = "{}.{}".format("module", sep[1])
         cmd = "{}({})".format(function, ",".join(params))
-        logging.debug("eval:{}({})".format(self.function, ",".join(params)))
+        #logging.debug("eval:{}({})".format(self.function, ",".join(params)))
         return eval(cmd)
 
     def _magic_execute_exec(self):
@@ -78,9 +78,12 @@ def function_executor(work):
     pe = PythonExecutor(function=work['function'],params=work['params'])
     result = { 
             'pid': os.getpid(), 
-            'executed': str(datetime.now()), 
-            'result': pe.executor(),
-            'completed': str(datetime.now()) }
+            # 'executed': str(datetime.now()), 
+            'executed' : str(time.time()),
+            # 'result': pe.executor(),
+            'result' : str(time.time()),
+            # 'completed': str(datetime.now()) 
+            'completed' : str(time.time())}
     return { **result, **work } 
 
 
