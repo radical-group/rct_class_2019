@@ -1,7 +1,7 @@
 # Simple zmq multiprocessing function executor.
   
   ### why not rabbitmq ?
-  Rabbitmq module is coming soon, i want to see what are the diferences that RMQ is oferring compared to the ZMQ.
+  Rabbitmq module is coming soon, i want to see what are the diferences that RMQ is offering compared to the ZMQ.
 
   #### 1- Give the zmq_send the function you want to execute and submit.
   #### 2- Run the zmq_server
