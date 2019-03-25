@@ -28,9 +28,9 @@ socket.connect(addr)
 
 start = time.time()
 
-for n in xrange(500):
+for n in xrange(8):
 
-    unit = Unit('import time \ntime.sleep', args=(1,))
+    unit = Unit('import time \ntime.sleep(1)')
 
     msg = {'data' : pickle.dumps(unit)}
     socket.send(msgpack.packb(msg))
