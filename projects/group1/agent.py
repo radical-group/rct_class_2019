@@ -5,6 +5,7 @@ import time
 import msgpack
 import pickle
 import logging
+import multiprocessing as mp
 
 from unit import Unit
 import hide_globals
@@ -12,7 +13,7 @@ from hide_globals import exec_user as execute_cu
 
 logger  = logging.getLogger(__name__)
 logging.basicConfig(level=logging.NOTSET)
-
+#os.spawnl(os.P_NOWAIT, 'queue.cu_queue()')
 
 
 class Executor():
@@ -73,37 +74,21 @@ class Executor():
             logger.debug('Result is {result}'.format(result=result))
 
         except Exception as e:
-            logger.warn('Uh Oh, Spaghetti O')
+            logger.warn(e)
 
         logger.info('Function executed')
 
         return result
 
-#class ComputeUnit():
-	# A CU is a container that runs one instance of an executor.
+class ComputeUnit():
+	 #### A CU is a container that runs one instance of an executor.
 	  
     
-    #def CU_Execute():
+    def CU_Execute():
 
     #DELAY = 0.5
 
-    #    addr = None
-    #    with open('test.bridge.url', 'r') as fin:
-    #        for line in fin.readlines():
-    #            tag, addr = line.split()
-    #            if tag == 'GET':
-    #                break
 
-    #    print 'GET: %s' % addr
-
-    #    with addr(addr) as executor:
-  
-    #        while True:
-    #            msg = executor.req_msg()
-
-    #            unit = pickle.loads(msg['data'])
-
-    #            executor.execute(unit)
 
 if __name__ == '__main__':
 
@@ -113,7 +98,7 @@ if __name__ == '__main__':
     CORES = 8
     
     # Spawn the queue first
-    os.spawnl(os.P_NOWAIT, 'queue.cu_queue()')
+    
 
     # Get the queue address
     addr = None
@@ -126,17 +111,14 @@ if __name__ == '__main__':
     print 'GET: %s' % addr
 
     workers = [None]*CORES
-
+    
     for worker in range(CORES):
 
         print workers[worker]
         with Executor(addr) as workers[worker]:
   
             while True:
-                msg = workers[worker].req_msg()
-                unit = pickle.loads(msg['data'])
-                workers[worker].execute(unit)
+               msg = workers[worker].req_msg()
+               unit = pickle.loads(msg['data'])
+               workers[worker].execute(unit)
 
-
-
-time.sleep(0)
