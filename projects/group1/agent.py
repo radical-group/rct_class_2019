@@ -6,6 +6,7 @@ import msgpack
 import pickle
 import logging
 import multiprocessing as mp
+import threading as mt
 
 from unit import Unit
 import hide_globals
@@ -13,7 +14,6 @@ from hide_globals import exec_user as execute_cu
 
 logger  = logging.getLogger(__name__)
 logging.basicConfig(level=logging.NOTSET)
-#os.spawnl(os.P_NOWAIT, 'queue.cu_queue()')
 
 
 class Executor():
@@ -75,6 +75,7 @@ class Executor():
 
         except Exception as e:
             logger.warn(e)
+            raise Exception
 
         logger.info('Function executed')
 
@@ -82,23 +83,35 @@ class Executor():
 
 class ComputeUnit():
 	 #### A CU is a container that runs one instance of an executor.
-	  
-    
-    def CU_Execute():
 
+
+    def CU_Execute():
+        return
     #DELAY = 0.5
 
 
+def start_cu(addr):
+    with Executor(addr) as worker:
+
+        while True:
+            msg = worker.req_msg()
+            unit = pickle.loads(msg['data'])
+            try:
+                worker.execute(unit)
+            except KeyboardInterrupt:
+                break
 
 if __name__ == '__main__':
 
+    # Hard code number of cores for now.
+    CORES = 4
 
-    
-    # Hard code number of cores for now. 
-    CORES = 8
-    
     # Spawn the queue first
-    
+    # os.spawnl(os.P_NOWAIT, 'queue.cu_queue()')
+
+    queue_t = mt.Thread(target = queue.cu_queue)
+    queue_t.start()
+    time.sleep(3)
 
     # Get the queue address
     addr = None
@@ -110,15 +123,7 @@ if __name__ == '__main__':
 
     print 'GET: %s' % addr
 
-    workers = [None]*CORES
-    
-    for worker in range(CORES):
+    workers = [addr]*CORES
 
-        print workers[worker]
-        with Executor(addr) as workers[worker]:
-  
-            while True:
-               msg = workers[worker].req_msg()
-               unit = pickle.loads(msg['data'])
-               workers[worker].execute(unit)
-
+    # create function executors
+    mp.Pool(CORES).map(start_cu, workers)
