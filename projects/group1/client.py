@@ -26,20 +26,20 @@ socket     = context.socket(zmq.PUSH)
 socket.hwm = 1
 socket.connect(addr)
 
-start = time.time()
+cores = 16
+tasks = 16
 
-for n in xrange(8):
+msg = {'data' : 16}
+socket.send(msgpack.packb(msg))
+
+for n in xrange(tasks):
 
     unit = Unit('import time \ntime.sleep(1)')
 
     msg = {'data' : pickle.dumps(unit)}
     socket.send(msgpack.packb(msg))
     print '-> %s' % n
-    time.sleep(DELAY)
-
-end = time.time()
-
-print end - start
+    # time.sleep(DELAY)
 
 # ------------------------------------------------------------------------------
 

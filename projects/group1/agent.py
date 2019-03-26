@@ -103,8 +103,10 @@ def start_cu(addr):
 
 if __name__ == '__main__':
 
+    start_time = time.time()
+
     # Hard code number of cores for now.
-    CORES = 4
+    CORES = 1
 
     # Spawn the queue first
     # os.spawnl(os.P_NOWAIT, 'queue.cu_queue()')
@@ -121,9 +123,21 @@ if __name__ == '__main__':
             if tag == 'GET':
                 break
 
-    print 'GET: %s' % addr
+    with Executor(addr) as worker:
+        msg = worker.req_msg()
+        CORES = pickle.loads(msg['data'])
+
+    logger.info('GET: {}'.format(addr))
+    logger.info('CORES: {}'.format(CORES))
 
     workers = [addr]*CORES
 
     # create function executors
-    mp.Pool(CORES).map(start_cu, workers)
+    pool = mp.Pool(processes=CORES)
+    result = pool.map(start_cu, workers)
+    pool.close()
+    pool.join()
+
+    end_time = time.time()
+
+    print 'Total Time: {}'.format(end_time - start_time)
