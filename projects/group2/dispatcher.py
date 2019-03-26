@@ -10,6 +10,10 @@ import time
 import argparse
 from operator import attrgetter
 from datetime import datetime
+# grpc
+import func_exec_pb2
+import func_exec_pb2_grpc
+
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -23,11 +27,14 @@ class Dispatcher(object):
         mq_socket: a socket of messaging system
         tid: a task id (auto-increment)
         task: A list of Task object to dispatch
+        response: A list of Task response only for grpc
     """
     uid = str(uuid.uuid4())
     #mq = "zmq" or "rabbitmq"
     q_name = "task_queue"
     tid = 0
+    task = []
+    response = []
 
     def __init__(self, mq_choice="zmq"):
         """Inits message queue by a user choice, zmq (Default) or rabbitmq """
@@ -50,6 +57,10 @@ class Dispatcher(object):
     def _init_rpyc(self):
         import rpyc
         self.mq_socket = rpyc.classic.connect("localhost")
+
+    def _init_grpc(self):
+        import grpc
+        self.mq_socket = grpc.insecure_channel('localhost:50051')
 
     def send(self, task_msg, iterate=1):
         """Sends Task to a queue 
@@ -101,6 +112,11 @@ class Dispatcher(object):
         else:
             self.mq_socket.execute("{}".format(msg['function']))
 
+    def _grpc_send(self, msg):
+        stub = func_exec_pb2_grpc.FuncExecStub(self.mq_socket)
+        response = stub.GetTask.future(func_exec_pb2.TaskRequest(fname=msg['function'],params=(",".join(msg['params']))))
+        self.response.append(response)
+
     def new_tid(self):
         self.tid += 1
         return self.tid
@@ -112,7 +128,7 @@ class Dispatcher(object):
         self.args = args
         if args.yaml:
             with open(args.yaml) as f:
-                data = yaml.load(f)
+                data = yaml.load(f, Loader=yaml.Loader)
             # Reset mq from yaml
             if self.mq != data['mq']:
                 self.__init__(data['mq'])
@@ -144,3 +160,8 @@ if __name__ == "__main__":
     tasks.sort(key=attrgetter('resources'))
     for task in tasks:
         obj.send(task)
+
+    if obj.mq == "grpc":
+        for response in obj.response:
+            logging.info("response:{}".format(response.result()))
+            # REMOVE response.. pop

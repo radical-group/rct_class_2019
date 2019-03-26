@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+service FuncExec {
+  rpc GetTask(TaskRequest) returns (TaskReply) {}
+  rpc RunExec(TaskRequest) returns (TaskReply) {}
+}
+
+message TaskRequest {
+  string fname = 1;
+  string params = 2;
+}
+
+message TaskReply {
+  string result = 1;
+}
+

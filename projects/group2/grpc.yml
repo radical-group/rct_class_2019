@@ -1,0 +1,10 @@
+mq: grpc
+task:
+        - !!python/object:Task.Task
+          function: compute_flops
+          params: ["1","4096"]
+          resources: 1
+        - !!python/object:Task.Task
+          function: compute_flops
+          params: ["1","8192"]
+          resources: 1

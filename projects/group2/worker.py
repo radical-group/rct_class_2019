@@ -11,6 +11,10 @@ import socket # gethostname
 import yaml
 import argparse
 from Task import Task
+# grpc
+import func_exec_pb2
+import func_exec_pb2_grpc
+from example_compute import compute_flops
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -62,6 +66,20 @@ class Worker(object):
         t = FuncExecRPyC()
         t.server.start()
 
+    def _init_grpc(self):
+        from concurrent import futures
+        import grpc
+
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=PROCESSES))
+        func_exec_pb2_grpc.add_FuncExecServicer_to_server(FuncExecServicer(), server)
+        server.add_insecure_port('localhost:50051')
+        server.start()
+        try:
+            while True:
+                time.sleep(60 * 60 * 24)
+        except KeyboardInterrupt:
+            server.stop(0)
+
     def recv(self):
         """Pulls a message from a queue"""
         func = getattr(self, "_recv_{}".format(self.mq))
@@ -78,6 +96,9 @@ class Worker(object):
         else:
             return {}
 
+    def _recv_grpc(self):
+        return {}
+
     def send(self, msg):
         """Pushes a (result) message to a separate queue"""
         func = getattr(self, "_send_{}".format(self.mq))
@@ -90,6 +111,9 @@ class Worker(object):
         #TBD
         print (msg)
 
+    def _send_grpc(self, msg):
+        loggin.debug(msg)
+
     def set_argument(self):
         parser = argparse.ArgumentParser("Python function worker")
         parser.add_argument("--yaml", help="yaml file to load")
@@ -101,6 +125,22 @@ class Worker(object):
             # Reset mq from yaml
             if self.mq != data['mq']:
                 self.__init__(data['mq'])
+
+# For grpc
+class FuncExecServicer(func_exec_pb2_grpc.FuncExecServicer):
+
+    def GetTask(self, request, context):
+        logging.debug("start:{}".format(time.time()))
+        logging.debug("function call:{}({})".format(request.fname, request.params))
+        res = eval("{}({})".format(request.fname, request.params))
+        logging.debug("end:{}".format(time.time()))
+        return func_exec_pb2.TaskReply(result='%s' % res)
+
+    def RunExec(self, request, context):
+        logging.debug("allocation by exec:{}={}".format(request.fname, request.params))
+        exec("{}={}".format(request.fname, request.params))
+        return func_exec_pb2.TaskReply(result='')
+
 
 if __name__ == "__main__":
 

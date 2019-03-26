@@ -59,3 +59,14 @@ the string, along with the `__import__` modules to the `function_executor()`
 executes the command defined by the task, and sends the output back to client
 
 
+### Other Communication Protocol (In Progress)
+
+* gRPC (test run)
+  - `python dispatcher.py --yaml grpc.yml` (gRPC client)
+  - `python worker.py --yamll grpc.yml` (gRPC server)
+
+* RPyC (test run)
+  - `python dispatcher.py --yaml rpyc.yml` (RPyC client)
+  - `python worker.py --yamll rpyc.yml` (RPyC server)
+
+
