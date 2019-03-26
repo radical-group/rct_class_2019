@@ -81,16 +81,18 @@ class Executor():
 
         return result
 
-class ComputeUnit():
+#class ComputeUnit():
 	 #### A CU is a container that runs one instance of an executor.
 
 
-    def CU_Execute():
-        return
+#    def CU_Execute():
+#        return
     #DELAY = 0.5
 
 
 def start_cu(addr):
+    # Starts a persistent "compute unit" that listens for messages from the queue. 
+    # Each message contains multi-line code to be executed by our executor.
     with Executor(addr) as worker:
 
         while True:
@@ -106,9 +108,7 @@ if __name__ == '__main__':
     # Hard code number of cores for now.
     CORES = 4
 
-    # Spawn the queue first
-    # os.spawnl(os.P_NOWAIT, 'queue.cu_queue()')
-
+    # Spawn the queue on an independent thread
     queue_t = mt.Thread(target = queue.cu_queue)
     queue_t.start()
     time.sleep(3)

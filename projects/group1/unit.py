@@ -1,4 +1,7 @@
 class Unit:
+	"""
+	Provides a compute unit description. Uses exec() to run code provided as text. 
+	"""
     def __init__(self, code, args=tuple(), kwargs=dict()):
         self.code   = code
         self.args   = args
