@@ -1,11 +1,13 @@
 import zmq
 import pika
+from Task import Task
 import sys
 import json
+import yaml
 import uuid
 import logging
 import time
-from Task import Task
+import argparse
 from operator import attrgetter
 from datetime import datetime
 
@@ -20,6 +22,7 @@ class Dispatcher(object):
         q_name: A queue name to push a Task message
         mq_socket: a socket of messaging system
         tid: a task id (auto-increment)
+        task: A list of Task object to dispatch
     """
     uid = str(uuid.uuid4())
     #mq = "zmq" or "rabbitmq"
@@ -43,6 +46,10 @@ class Dispatcher(object):
         channel = connection.channel()
         channel.queue_declare(queue=self.q_name, durable=False)
         self.mq_socket = channel
+
+    def _init_rpyc(self):
+        import rpyc
+        self.mq_socket = rpyc.classic.connect("localhost")
 
     def send(self, task_msg, iterate=1):
         """Sends Task to a queue 
@@ -77,12 +84,43 @@ class Dispatcher(object):
                          delivery_mode = 2, # make message persistent
                       ))
 
+    def _rpyc_send(self, msg):
+        if isinstance(msg['params'], list):
+            params = [ str (x) for x in msg['params'] ]
+        else:
+            params = msg['params']
+        sep = msg['function'].split(".", 1)
+        function = msg['function']
+        if len(sep) > 1:
+            try:
+                self.mq_socket.execute("import {}".format (sep[0]))
+            except:
+                pass
+        if params:
+            self.mq_socket.execute("{}({})".format(msg['function'], ','.join(params)))
+        else:
+            self.mq_socket.execute("{}".format(msg['function']))
+
     def new_tid(self):
         self.tid += 1
         return self.tid
 
-if __name__ == "__main__":
+    def set_argument(self):
+        parser = argparse.ArgumentParser("Python function dispatcher")
+        parser.add_argument("--yaml", help="yaml file to load")
+        args = parser.parse_args()
+        self.args = args
+        if args.yaml:
+            with open(args.yaml) as f:
+                data = yaml.load(f)
+            # Reset mq from yaml
+            if self.mq != data['mq']:
+                self.__init__(data['mq'])
+            self.task = data['task']
+            return data['task']
+        return None
 
+if __name__ == "__main__":
     tasks = [
                 Task(function  = "example_compute.compute_flops", 
                   params    = [1, 2048],
@@ -99,6 +137,10 @@ if __name__ == "__main__":
             ]  
 
     obj = Dispatcher()
+    # Overriden by cmd params
+    tasks_from_yaml = obj.set_argument()
+    if tasks_from_yaml:
+        tasks = tasks_from_yaml
     tasks.sort(key=attrgetter('resources'))
     for task in tasks:
         obj.send(task)

@@ -1,0 +1,18 @@
+mq: rpyc
+task:
+        - !!python/object:Task.Task
+          function: from random import sample;from numpy import median
+          params: null
+          resources: 1
+        - !!python/object:Task.Task
+          function: my_randoms = sample(range(2**25), 2**20)
+          params: null
+          resources: 1
+        - !!python/object:Task.Task
+          function: my_randoms = median(my_randoms)
+          params: null
+          resources: 1
+        - !!python/object:Task.Task
+          function: print (my_randoms)
+          params: null
+          resources: 1

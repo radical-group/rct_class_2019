@@ -7,7 +7,11 @@ import uuid
 from executor import function_executor as fexec
 import multiprocessing as mp
 import logging
-import socket
+import socket # gethostname
+import yaml
+import argparse
+from Task import Task
+
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 PROCESSES = 10 
@@ -29,6 +33,7 @@ class Worker(object):
 
     def __init__(self, mq_choice="zmq"):
         self.mq = mq_choice
+        logging.info("mq:{}".format(self.mq))
         # Assign ID to each worker
         self.uid = str(uuid.uuid4())
         # hostname of worker
@@ -52,6 +57,11 @@ class Worker(object):
         channel.queue_declare(queue=self.q_name, durable=False)
         self.receiver = channel
 
+    def _init_rpyc(self):
+        from rpc_service import FuncExecRPyC
+        t = FuncExecRPyC()
+        t.server.start()
+
     def recv(self):
         """Pulls a message from a queue"""
         func = getattr(self, "_recv_{}".format(self.mq))
@@ -65,6 +75,8 @@ class Worker(object):
         if method_frame:
             self.receiver.basic_ack(method_frame.delivery_tag)
             return json.loads(body)
+        else:
+            return {}
 
     def send(self, msg):
         """Pushes a (result) message to a separate queue"""
@@ -77,6 +89,18 @@ class Worker(object):
     def _send_rabbitmq(self, msg):
         #TBD
         print (msg)
+
+    def set_argument(self):
+        parser = argparse.ArgumentParser("Python function worker")
+        parser.add_argument("--yaml", help="yaml file to load")
+        args = parser.parse_args()
+        self.args = args
+        if args.yaml:
+            with open(args.yaml) as f:
+                data = yaml.load(f, Loader=yaml.Loader)
+            # Reset mq from yaml
+            if self.mq != data['mq']:
+                self.__init__(data['mq'])
 
 if __name__ == "__main__":
 
@@ -91,6 +115,8 @@ if __name__ == "__main__":
     print ('Creating pool with {} processes\n'.format(PROCESSES))
 
     obj = Worker()
+    # Read yaml from cmd if given
+    obj.set_argument()
     results = []
     #for i in range(TASK_COUNT):
     # TODO: (hlee) timeout for loop

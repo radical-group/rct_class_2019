@@ -8,6 +8,9 @@
 
 ### Execution instruction:
 
+* pypi installation
+  `pip install -r requirements.txt`
+
 #### Function Executor CLI (standalone)
 
 `python executor_cli.py --function min --params 1 2`
