@@ -1,13 +1,13 @@
+#!/usr/bin/env python
 
 import os
 import sys
 import time
 
-import threading       as mt
 import multiprocessing as mp
+import threading       as mt
 
 import radical.utils   as ru
-
 
 # wtf
 import queue
@@ -37,7 +37,7 @@ class Executor(object):
 
     # --------------------------------------------------------------------------
     #
-    def __init__(self, n_workers):
+    def __init__(self, n_workers=None):
 
         self._nw   = n_workers
         self._uid  = os.environ['RP_UNIT_ID']
@@ -210,6 +210,13 @@ class Executor(object):
 
             self._mpq_result.put(task)
 
+
+# ------------------------------------------------------------------------------
+#
+if __name__ == '__main__':
+
+    executor = Executor()
+    executor.run()
 
 
 # ------------------------------------------------------------------------------
