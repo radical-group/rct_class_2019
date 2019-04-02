@@ -3,193 +3,145 @@
 import os
 import sys
 import time
-import psutil
 
-import threading       as mt
 import multiprocessing as mp
 
+import radical.utils   as ru
 
-# ------------------------------------------------------------------------------
-#
-class Unit(object):
-
-    # --------------------------------------------------------------------------
-    #
-    def __init__(self, descr):
-
-        self.descr  = descr
-        self.uid    = descr['uid']
-        self.exe    = descr['exe']
-        self.args   = descr['args']
-        self.result = None
-        self.worker = None
-
-
-    # --------------------------------------------------------------------------
-    #
-    def wait(self):
-
-        while self.result is None:
-            time.sleep(0.1)
+from executor import Executor
 
 
 # ------------------------------------------------------------------------------
 #
-class Executor:
+class FuncExecApp(object):
 
     # --------------------------------------------------------------------------
     #
-    def __init__(self, n):
+    def __init__(self, n_executors=1, executor_size=1):
 
-        self._units    = dict()
-        self._work_q   = mp.Queue()
-        self._result_q = mp.Queue()
+        self._prof = ru.Profiler('radical.pilot.func_exec')
 
-        self._p_collect = mt.Thread(target=self._collect)
-        self._p_collect.start()
+        self._prof.prof('init_start')
 
-        self._procs    = [mp.Process(target=self._work, args=['w.%02d' % i])
-                           for i in range(n)]
-        for p in self._procs:
-            p.start()
+        # create work, result and control ZMQ bridges
+        zmq_b_work    = ru.zmq.Queue({'name': 'WRK', 'uid': 'radical.utils.wrk'})
+        zmq_b_result  = ru.zmq.Queue({'name': 'RES', 'uid': 'radical.utils.res'})
+        zmq_b_control = ru.zmq.Queue({'name': 'CTL', 'uid': 'radical.utils.ctl'})
+
+        env = os.environ
+        env['APP_WRK_PUT'] = str(zmq_b_work.addr_in)
+        env['APP_WRK_GET'] = str(zmq_b_work.addr_out)
+
+        env['APP_RES_PUT'] = str(zmq_b_result.addr_in)
+        env['APP_RES_GET'] = str(zmq_b_result.addr_out)
+
+        env['APP_CTL_PUT'] = str(zmq_b_control.addr_in)
+        env['APP_CTL_GET'] = str(zmq_b_control.addr_out)
+
+        # start `n` executors as CUs of size `s`
+        def _cu(size):
+            cu = Executor(n_workers=size)
+            cu.run()
+
+        self._execs = list()
+        for i in range(n_executors):
+            env['RP_UNIT_ID'] = 'unit.%06d' % i
+            proc = mp.Process(target=_cu, args=[executor_size])
+            proc.start()
+            self._execs.append(proc)
+
+        # connect our endpoints
+        self._zmq_work    = ru.zmq.Putter(channel='WRK', url=env['APP_WRK_PUT'])
+        self._zmq_result  = ru.zmq.Getter(channel='RES', url=env['APP_RES_GET'])
+        self._zmq_control = ru.zmq.Putter(channel='CTL', url=env['APP_CTL_PUT'])
+
+        self._prof.prof('init_stop')
 
 
     # --------------------------------------------------------------------------
     #
-    def _out(self, pid, msg):
+    def run_tasks(self, tasks):
+        '''
+        submit the given tasks, wait for their completion.
+        returns a copy of the original task list (order not preserved)
+        '''
 
-        sys.stdout.write('%-10s: %s\n' % (pid, msg))
-        sys.stdout.flush()
+        self._prof.prof('run_start')
+        n_tasks = len(tasks)
 
+        self._zmq_work.put(tasks)
 
-    # --------------------------------------------------------------------------
-    #
-    def _collect(self):
-
+        ret = list()
         while True:
 
-            ret = self._result_q.get()
+            if len(ret) == n_tasks:
+                self._prof.prof('run_stop')
+                return ret
 
-            if not ret:
-                return
+            res = self._zmq_result.get_nowait(timeout=100)
 
-            uid, wid, res = ret
-
-            self._units[uid].result = res
-            self._units[uid].worker = wid
-
-         #  self._out(pid, '---> %s [%s]: %s' % (uid, wid, res))
+            if res:
+                ret.extend(res)
 
 
     # --------------------------------------------------------------------------
     #
-    def submit(self, cud):
+    def stop(self):
 
-        cu = Unit(cud)
+        for e in self._execs:
+            self._zmq_control.put({'cmd' : 'term'})
 
-        self._units[cu.uid] = cu
+        for e in self._execs:
+            e.join(timeout=1.0)
 
-        self._work_q.put(cud)
-
-        return cu
-
-
-    # --------------------------------------------------------------------------
-    #
-    def _work(self, wid):
-
-      # self._out(wid, '%s start' % wid)
-
-        while True:
-
-            try:
-
-                try:
-                    cud = self._work_q.get()
-                except:
-                    time.sleep(1)
-                    continue
-
-              # self._out(wid, '%s: get %s' % (wid, cu))
-                if not cud:
-                  # self._out(wid, '%s: break' % wid)
-                    break
-
-                uid  = cud['uid']
-                exe  = cud['exe']
-                args = cud.get('args', [])
-                cmd  = '%s(%s)' % (exe, ','.join(args)) 
-                res  = eval(cmd)
-
-                self._result_q.put([uid, wid, res])
-
-            except Exception as e:
-                self._out(wid, '!!', wid, e)
-
-      # self._out(wid, 'done')
+        for e in self._execs:
+            e.terminate()
 
 
-    # --------------------------------------------------------------------------
-    #
-    def terminate(self):
+def usage(exit_code):
 
-        for p in self._procs:
-            self._work_q.put(None)
+    print '''
 
-        self._result_q.put(None)
+    usage:     %(cmd)s n_tasks cmd arg_1 arg_2 ...
+
+    examples:  %(cmd)s 10      time.time
+               %(cmd)s 1000    time.sleep 0.1
+               %(cmd)s 1000000 time.sleep foo       # undefined variable foo
+               %(cmd)s 1000000 time.sleep "'foo'"   # needs float, not string
+
+''' % {'cmd' : sys.argv[0]}
+
+    sys.exit(exit_code)
 
 
 # ------------------------------------------------------------------------------
 #
 if __name__ == '__main__':
 
-    n    = 16       # number of worker processes
-    N    = 100000   # number of tasks
+    if len(sys.argv) < 3:
+        usage(1)
 
-    cus  = list()
-    prof = list()
-    prof.append(time.time())
+    n_tasks = int(sys.argv[1])
+    cmd     =     sys.argv[2]
+    args    =     sys.argv[3:]
 
-    r = Executor(n=n)
+    app     = FuncExecApp(n_executors=2, executor_size=4)
 
-    prof.append(time.time())
-    for i in range(N):
-        cud = {'uid'  : 'cu.%06d' % i,
-               'exe'  : 'time.time',
-               'args' : []}
-        cu  = r.submit(cud)
-        cus.append(cu)
+    tasks   = list()
+    for i in range(n_tasks):
+        task = {'uid'  : 'task.%06d' % i,
+                'exe'  : cmd,
+                'args' : args}
+        tasks.append(task)
 
-    prof.append(time.time())
-    for cu in cus:
-        cu.wait()
-     #  print '--> %s [%s]: %s' % (cu.uid, cu.worker, cu.result)
-    prof.append(time.time())
+    # run_tasks returns a copy of the original task list
+    tasks = app.run_tasks(tasks)
 
-    r.terminate()
-    prof.append(time.time())
+    for task in tasks:
+        print task
 
 
-    print 'workers: %10d' % n
-    print 'tasks  : %10d' % N
-
-    diff = prof[1] - prof[0]
-    print 'start  : %10.2f s' % (diff)
-
-    diff = prof[2] - prof[1]
-    print 'submit : %10.2f s  [%8d tasks/s]' % (diff, N / diff)
-
-    diff = prof[3] - prof[2]
-    print 'collect: %10.2f s  [%8d tasks/s]' % (diff, N / diff)
-
-    diff = prof[4] - prof[3]
-    print 'term   : %10.2f s' % (diff)
-
-    diff = prof[4] - prof[0]
-    print 'total  : %10.2f s' % (diff)
-
-    p = psutil.Process(os.getpid())
-    print 'memory : %10.2f MB]' % (p.memory_info().rss / (1024 * 1024))
+    app.stop()
 
 
 # ------------------------------------------------------------------------------
