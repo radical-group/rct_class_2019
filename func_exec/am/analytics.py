@@ -39,7 +39,9 @@ if __name__ == '__main__':
 
 
     # --------------------------------------------------------------------------
+    #
     # event timeline
+    #
     data = dict()
     for thing in session.get():
 
@@ -67,26 +69,32 @@ if __name__ == '__main__':
 
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
           ncol=2, fancybox=True, shadow=True)
-    plt.savefig('07_event_timeline.svg')
+    plt.savefig('timeline.svg')
     plt.show()
 
+
     # --------------------------------------------------------------------------
-    # task concurrency
     #
-    data = session.concurrency(event=[e_get, e_put], sampling=0.1)
+    # task rate
+    #
+    plt.figure(figsize=(20,14))
 
-    import pprint
-    pprint.pprint(data)
-
+    data = session.rate(event=e_get, sampling=0.1)
     x = [e[0] for e in data]
     y = [e[1] for e in data]
 
-    plt.figure(figsize=(20,14))
-    plt.plot(x, y, label='get / put')
+    plt.plot(x, y, label='get')
 
+    data = session.rate(event=e_put, sampling=0.1)
+    x = [e[0] for e in data]
+    y = [e[1] for e in data]
+
+    plt.plot(x, y, label='put')
+
+    plt.ylim(bottom=0)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
           ncol=2, fancybox=True, shadow=True)
-    plt.savefig('06_concurrency.svg')
+    plt.savefig('rate.svg')
     plt.show()
 
 
