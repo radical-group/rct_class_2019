@@ -5,6 +5,11 @@ import time
 import radical.utils as ru
 
 
+_ve  = "/home/merzky/projects/rct/rct_class_2019/func_exec/am/ve"
+_vea = "%s/bin/activate_this.py" % _ve
+execfile(_vea, dict(__file__=_vea))
+
+
 # ------------------------------------------------------------------------------a
 #
 if __name__ == '__main__':
@@ -20,17 +25,16 @@ if __name__ == '__main__':
     zmq_b_result  = ru.zmq.Queue({'name': 'RES', 'uid': 'radical.utils.res'})
     zmq_b_control = ru.zmq.Queue({'name': 'CTL', 'uid': 'radical.utils.ctl'})
 
-    with open('./setup.env', 'w') as fout:
+    with open('./addr.url', 'w') as fout:
 
-        fout.write("export %s=%s\n" % ('APP_WRK_PUT', zmq_b_work.addr_in))
-        fout.write("export %s=%s\n" % ('APP_WRK_GET', zmq_b_work.addr_out))
+        fout.write("%s=%s\n" % ('WRK_PUT', zmq_b_work.addr_in))
+        fout.write("%s=%s\n" % ('WRK_GET', zmq_b_work.addr_out))
 
-        fout.write("export %s=%s\n" % ('APP_RES_PUT', zmq_b_result.addr_in))
-        fout.write("export %s=%s\n" % ('APP_RES_GET', zmq_b_result.addr_out))
+        fout.write("%s=%s\n" % ('RES_PUT', zmq_b_result.addr_in))
+        fout.write("%s=%s\n" % ('RES_GET', zmq_b_result.addr_out))
 
-        fout.write("export %s=%s\n" % ('APP_CTL_PUT', zmq_b_control.addr_in))
-        fout.write("export %s=%s\n" % ('APP_CTL_GET', zmq_b_control.addr_out))
-        fout.flush()
+        fout.write("%s=%s\n" % ('CTL_PUT', zmq_b_control.addr_in))
+        fout.write("%s=%s\n" % ('CTL_GET', zmq_b_control.addr_out))
 
     # wait forever
     while True:

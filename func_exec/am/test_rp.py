@@ -2,9 +2,11 @@
 
 import os
 import sys
+import time
 
 import radical.utils as ru
 import radical.pilot as rp
+
 
 # This runs RP with the function executor as workload.  We first run a single
 # compute unit on core no. 0 which sets up the communication bridges.  We let
@@ -20,9 +22,11 @@ import radical.pilot as rp
 #
 # Note that one executor will have a core missing, fir account for the setup CU.
 
-nodes = 4
-cpn   = 8
-pwd   = os.getcwd()
+ntasks = 1024 * 128
+chunk  = ntasks
+nodes  = 8
+cpn    = 8
+pwd    = os.getcwd()
 
 # ------------------------------------------------------------------------------
 #
@@ -44,9 +48,7 @@ if __name__ == '__main__':
         umgr.add_pilots(pilot)
 
         # start the initial CU
-        cu_init = {'executable' :  '%s/cu_setup.py'       % pwd, 
-                   'pre_exec'   : ['. %s/ve/bin/activate' % pwd]
-                  }
+        cu_init = {'executable' : '%s/cu_setup.py' % pwd}
         cud = rp.ComputeUnitDescription(cu_init)
 
         # run it, wait until it is being executed
@@ -54,31 +56,56 @@ if __name__ == '__main__':
 
         umgr.wait_units(state=['AGENT_EXECUTING'])
 
-        # setup has been executed, grab the output
-        sbox = setup_cu.sandbox
-        env  = dict()
+        # wait a while until the addr info arrive on the file system (timeout
+        # after a min)
         setup_sbox = ru.Url(setup_cu.sandbox).path
-        with open('%s/setup.env' % setup_sbox, 'r') as fin:
+        addr_fname = '%s/addr.url' % setup_sbox
+
+        t_0 = time.time()
+        while time.time() - t_0 < 60:
+            if os.path.isfile(addr_fname):
+                break
+            else:
+                time.sleep(1)
+
+        if not os.path.isfile(addr_fname):
+            raise RuntimeError('cannot find address info')
+
+        # setup has been executed, grab the output
+        addr = dict()
+        with open(addr_fname, 'r') as fin:
             for line in fin.readlines():
-                kv   = line.split()[1]
-                k, v = kv.split('=', 1)
-                env[k]        = v  # for the other CUs
+                k, v = line.strip().split('=', 1)
+                addr[k] = v
 
         # connect to the ZMQ channels
-        zmq_work    = ru.zmq.Putter(channel='WRK', url=env['APP_WRK_PUT'])
-        zmq_result  = ru.zmq.Getter(channel='RES', url=env['APP_RES_GET'])
-        zmq_control = ru.zmq.Putter(channel='CTL', url=env['APP_CTL_PUT'])
+        zmq_work    = ru.zmq.Putter(channel='WRK', url=addr['WRK_PUT'])
+        zmq_result  = ru.zmq.Getter(channel='RES', url=addr['RES_GET'])
+        zmq_control = ru.zmq.Putter(channel='CTL', url=addr['CTL_PUT'])
 
         print 'zmq connected'
+
+        cmd     = 'time.time'
+        args    = []
+        tasks   = list()
+        for i in range(ntasks):
+            task = {'uid'  : 'task.%06d' % i,
+                    'exe'  : cmd,
+                    'args' : args}
+            tasks.append(task)
+
+        print 'tasks send'
+        n = 0
+        while n < ntasks:
+            zmq_work.put(tasks[n:n + chunk])
+            n += chunk
+
+        print 'tasks sent'
 
         # run the executor CUs
         cuds = list()
         for n in range(nodes):
-            cu_exec = {'executable' :  '%s/cu_exec.py'             % pwd, 
-                       'pre_exec'   : ['. ../unit.000000/setup.env',
-                                       '. %s/ve/bin/activate' % pwd], 
-                       'environment':  env
-                      }
+            cu_exec = {'executable' : '%s/cu_exec.py' % pwd}
             cuds.append(rp.ComputeUnitDescription(cu_exec))
 
         umgr.submit_units(cuds)
@@ -86,28 +113,15 @@ if __name__ == '__main__':
 
         print 'all execs are active'
 
-        n_tasks = 100000
-        cmd     = 'time.time'
-        args    = []
-
-        tasks   = list()
-        for i in range(n_tasks):
-            task = {'uid'  : 'task.%06d' % i,
-                    'exe'  : cmd,
-                    'args' : args}
-            tasks.append(task)
-
-        print 'tasks send'
-        zmq_work.put(tasks)
-        print 'tasks sent'
-
         ret = list()
         while True:
 
-            if len(ret) == n_tasks:
+            if len(ret) == ntasks:
                 print 'tasks done'
                 for task in ret:
-                    print task
+                    if task['err']: sys.stdout.write('-')
+                    else          : sys.stdout.write('+')
+                print
                 sys.exit(0)
 
             res = zmq_result.get_nowait(timeout=100)
@@ -116,7 +130,7 @@ if __name__ == '__main__':
                 ret.extend(res)
 
     finally:
-        session.close(download=True)
+        session.close(download=False)
 
 
 # ------------------------------------------------------------------------------

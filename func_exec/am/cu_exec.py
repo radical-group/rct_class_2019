@@ -13,6 +13,10 @@ import radical.utils   as ru
 import queue
 mp.Queue.Empty = queue.Empty
 
+_ve  = "/home/merzky/projects/rct/rct_class_2019/func_exec/am/ve"
+_vea = "%s/bin/activate_this.py" % _ve
+execfile(_vea, dict(__file__=_vea))
+
 
 # ------------------------------------------------------------------------------
 #
@@ -52,16 +56,22 @@ class Executor(object):
 
         self._prof.prof('init_start', uid=self._uid)
 
+        # get addresses
+        addr = dict()
+        with open('../unit.000000/addr.url', 'r') as fin:
+            for line in fin.readlines():
+                k, v = line.strip().split('=', 1)
+                addr[k] = v
+
         # connect to 
         #
         #   - the queue which feeds us tasks
         #   - the queue were we send completed tasks
         #   - the command queue (for termination)
         #
-        env = os.environ
-        self._zmq_work    = ru.zmq.Getter(channel='WRK', url=env['APP_WRK_GET'])
-        self._zmq_result  = ru.zmq.Putter(channel='RES', url=env['APP_RES_PUT'])
-        self._zmq_control = ru.zmq.Getter(channel='CTL', url=env['APP_CTL_GET'])
+        self._zmq_work    = ru.zmq.Getter(channel='WRK', url=addr['WRK_GET'])
+        self._zmq_result  = ru.zmq.Putter(channel='RES', url=addr['RES_PUT'])
+        self._zmq_control = ru.zmq.Getter(channel='CTL', url=addr['CTL_GET'])
 
         # use mp.Queue instances to proxy tasks to the worker processes
         self._mpq_work    = mp.Queue()
@@ -141,6 +151,8 @@ class Executor(object):
             tasks = self._zmq_work.get_nowait(100)
 
             if tasks:
+
+                self._log.debug('=== got %d tasks', len(tasks))
 
                 # send task individually to load balance workers
                 for task in tasks:
