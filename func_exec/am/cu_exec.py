@@ -14,6 +14,7 @@ import queue
 mp.Queue.Empty = queue.Empty
 
 _ve  = "/home/merzky/projects/rct/rct_class_2019/func_exec/am/ve"
+_ve  = "/gpfs/alpine/bip178/scratch/merzky1/rct_class_2019/func_exec/am/ve"
 _vea = "%s/bin/activate_this.py" % _ve
 execfile(_vea, dict(__file__=_vea))
 
