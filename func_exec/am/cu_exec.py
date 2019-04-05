@@ -18,7 +18,6 @@ mp.Queue.Empty = queue.Empty
 #
 class Executor(object):
     '''
-
     This executor is running as an RP task and owns a complete node.  On each
     core of that node, it spawns a worker process to execute function calls.
     Communication to those processes is establshed via two mp.Queue instances,
@@ -32,7 +31,6 @@ class Executor(object):
     proxy them to an outgoing ZMQ channel.  The Executor main thread will listen
     on a 3rd ZMQ channel for control messages, and specifically for termination
     commands.
-
     '''
 
     # --------------------------------------------------------------------------
@@ -45,6 +43,8 @@ class Executor(object):
         self._prof = ru.Profiler('radical.pilot.func_exec')
 
 
+    # --------------------------------------------------------------------------
+    #
     def _initialize(self):
         '''
         set up processes, threads and communication channels
@@ -57,8 +57,6 @@ class Executor(object):
         #   - the queue which feeds us tasks
         #   - the queue were we send completed tasks
         #   - the command queue (for termination)
-        #
-        # FIXME: ZMQ
         #
         env = os.environ
         self._zmq_work    = ru.zmq.Getter(channel='WRK', url=env['APP_WRK_GET'])
@@ -82,8 +80,7 @@ class Executor(object):
         self._t_get_work.start()
         self._t_get_results.start()
 
-        # start one worker per core (as daemons for simpler termination)
-
+        # start one worker per core
         if not self._nw:
             self._nw = mp.cpu_count() 
 
@@ -93,7 +90,6 @@ class Executor(object):
         for i in range(self._nw):
             wid  = '%s.%03d' % (self._uid, i)
             proc = mp.Process(target=self._work, args=[self._uid, wid])
-            proc.daemon = True
             proc.start()
             self._workers.append(proc)
 
@@ -109,6 +105,7 @@ class Executor(object):
         '''
 
         self._initialize()
+
         while True:
 
             msgs = self._zmq_control.get_nowait(100)
@@ -118,10 +115,7 @@ class Executor(object):
 
             for msg in msgs:
 
-                print 'cmd: %s' % msg
-
                 self._prof.prof('cmd', uid=self._uid, msg=msg['cmd'])
-
 
                 if msg['cmd'] == 'term':
 
@@ -138,6 +132,9 @@ class Executor(object):
     # --------------------------------------------------------------------------
     #
     def _get_work(self):
+        '''
+        thread feeding tasks pulled from the ZMQ work queue to worker processes
+        '''
 
         while not self._term.is_set():
 
@@ -153,6 +150,9 @@ class Executor(object):
     # --------------------------------------------------------------------------
     #
     def _get_results(self):
+        '''
+        thread feeding back results from to workers to the result ZMQ queue
+        '''
 
         while not self._term.is_set():
 
@@ -167,12 +167,11 @@ class Executor(object):
                 self._zmq_result.put(task)
 
 
-
     # --------------------------------------------------------------------------
     #
     def _work(self, uid, wid):
         '''
-        work loop for worker processes: pull a work item from the work queue,
+        work loop for worker processes: pull a task from the work queue,
         run it, push the result onto the result queue
         '''
 
@@ -193,19 +192,18 @@ class Executor(object):
             cmd  = '%s(%s)' % (exe, ','.join(args)) 
 
             self._prof.prof('task_get', comp=wid, uid=tid)
-            self._log.debug('get %s: %s', tid, cmd)
+          # self._log.debug('get %s: %s', tid, cmd)
 
-            res = None
-            err = None
+            task['res'] = None
+            task['err'] = None
+
             try:
-                res = eval(cmd)
+                task['res'] = eval(cmd)
+
             except Exception as e:
-                err = str(e)
+                task['err'] = str(e)
 
-            task['res'] = res
-            task['err'] = err
-
-            self._log.debug('put %s: %s', tid, str(task['res']))
+          # self._log.debug('put %s: %s', tid, str(task['res']))
             self._prof.prof('task_put', comp=wid, uid=tid)
 
             self._mpq_result.put(task)

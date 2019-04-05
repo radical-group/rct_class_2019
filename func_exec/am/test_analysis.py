@@ -13,11 +13,8 @@ import matplotlib.pyplot as plt
 import numpy             as np
 
 
-# We plot timelines for all events listed in `event_list` for all entities of
-# type `event_entity`..  Before plotting, we sort those entities by the
-# timestamp of the first event in the event list
-
-event_entity = 'task'
+# ------------------------------------------------------------------------------
+# task related events
 e_get = {ru.STATE: None, ru.EVENT: 'task_get'}
 e_put = {ru.STATE: None, ru.EVENT: 'task_put'}
 
@@ -26,39 +23,30 @@ e_put = {ru.STATE: None, ru.EVENT: 'task_put'}
 #
 if __name__ == '__main__':
 
-    if len(sys.argv) < 2:
-        print "\n\tusage: %s <dir|tarball>\n" % sys.argv[0]
-        sys.exit(1)
-
     src     = sys.argv[1]
-    stype   = 'radical'
-    session = ra.Session(src, stype)
-
-    session.filter(etype=event_entity, inplace=True)
+    session = ra.Session(src, 'radical')
+    tasks   = session.filter(etype='task', inplace=False)
     print '#entities: %d' % len(session.get())
 
 
     # --------------------------------------------------------------------------
-    #
     # event timeline
-    #
     data = dict()
-    for thing in session.get():
+    for task in session.get():
 
         tstamps = list()
-
         for event in [e_get, e_put]:
-            times = thing.timestamps(event=event)
+            times = task.timestamps(event=event)
             if times: tstamps.append(times[0])
             else    : tstamps.append(None)
 
-        data[thing.uid] = tstamps
+        data[task.uid] = tstamps
 
-    sorted_things = sorted(data.items(), key=lambda e: e[1][0])
-    sorted_data   = list()
-    index         = 0
-    for thing in sorted_things:
-        sorted_data.append([index] + thing[1])
+    sorted_tasks = sorted(data.items(), key=lambda e: e[1][0])
+    sorted_data  = list()
+    index        = 0
+    for task in sorted_tasks:
+        sorted_data.append([index] + task[1])
         index += 1
 
     np_data = np.array(sorted_data)
@@ -74,9 +62,7 @@ if __name__ == '__main__':
 
 
     # --------------------------------------------------------------------------
-    #
     # task rate
-    #
     plt.figure(figsize=(20,14))
 
     data = session.rate(event=e_get, sampling=0.1)
@@ -96,10 +82,6 @@ if __name__ == '__main__':
           ncol=2, fancybox=True, shadow=True)
     plt.savefig('rate.svg')
     plt.show()
-
-
-
-# ------------------------------------------------------------------------------
 
 
 # ------------------------------------------------------------------------------

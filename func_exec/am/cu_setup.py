@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import sys
 import time
 
 import radical.utils as ru
@@ -9,8 +8,14 @@ import radical.utils as ru
 # ------------------------------------------------------------------------------a
 #
 if __name__ == '__main__':
+    '''
+    create work, result and control ZMQ bridges, and store their respective
+    endpoints so that other CUs (executors) can use them.
 
-    # create work, result and control ZMQ bridges
+    This CU will run forever, keeping the bridges alive on node_1, and will get
+    terminnated when the pilot shuts down.
+    '''
+
     zmq_b_work    = ru.zmq.Queue({'name': 'WRK', 'uid': 'radical.utils.wrk'})
     zmq_b_result  = ru.zmq.Queue({'name': 'RES', 'uid': 'radical.utils.res'})
     zmq_b_control = ru.zmq.Queue({'name': 'CTL', 'uid': 'radical.utils.ctl'})
