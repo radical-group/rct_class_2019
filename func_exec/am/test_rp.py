@@ -24,8 +24,8 @@ import radical.pilot as rp
 
 ntasks = 1024 * 128
 chunk  = ntasks
-nodes  = 8
-cpn    = 8
+nodes  = 10
+cpn    = 41
 pwd    = os.getcwd()
 
 # ------------------------------------------------------------------------------
@@ -40,6 +40,13 @@ if __name__ == '__main__':
                    'runtime'       : 60,
                    'exit_on_error' : True,
                    'cores'         : cpn * nodes
+                  }
+        pd_init = {'resource'      : 'ornl.summit',
+                   'runtime'       : 60,
+                   'exit_on_error' : True,
+                   'cores'         : cpn * nodes,
+                   'queue'         : 'batch',
+                   'project'       : 'BIP178',
                   }
         pdesc = rp.ComputePilotDescription(pd_init)
         pilot = pmgr.submit_pilots(pdesc)
@@ -69,7 +76,7 @@ if __name__ == '__main__':
                 time.sleep(1)
 
         if not os.path.isfile(addr_fname):
-            raise RuntimeError('cannot find address info')
+            raise RuntimeError('cannot find address info in %s' % addr_fname)
 
         # setup has been executed, grab the output
         addr = dict()
