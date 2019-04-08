@@ -9,8 +9,23 @@ import sys
 import radical.utils     as ru
 import radical.analytics as ra
 
+import matplotlib        as mpl
 import matplotlib.pyplot as plt
 import numpy             as np
+
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 14}
+
+plt.rcParams['axes.titlesize']   = 14
+plt.rcParams['axes.labelsize']   = 14
+plt.rcParams['axes.linewidth']   =  2
+plt.rcParams['lines.linewidth']  =  2
+plt.rcParams['lines.markersize'] = 14
+plt.rcParams['xtick.labelsize']  = 14
+plt.rcParams['ytick.labelsize']  = 14
+plt.rc('font', **font)
+
 
 
 # ------------------------------------------------------------------------------
@@ -51,19 +66,27 @@ if __name__ == '__main__':
 
     np_data = np.array(sorted_data)
 
-    plt.figure(figsize=(20,14))
-    for idx, e in enumerate([e_get, e_put]):
-        plt.plot(np_data[:,0], np_data[:,(1 + idx)], label=e[ru.EVENT])
+    with open('fex_timeline.dat', 'w') as fout:
+        d0 = list(np_data[:,0])
+        d1 = list(np_data[:,1])
+        d2 = list(np_data[:,2])
+        for n in range(len(d0)):
+            x, y, z = d0[n], d1[n], d2[n]
+            if None not in [x, y, z]:
+                fout.write('%f,%f,%f\n' % (x, y, z))
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-          ncol=2, fancybox=True, shadow=True)
-    plt.savefig('timeline.svg')
+    plt.figure(figsize=(10,4))
+    for idx, e in enumerate([e_get, e_put]):
+        plt.plot(np_data[:,0], np_data[:,(1 + idx)], label=e[ru.EVENT][-3:])
+
+    plt.legend(ncol=2, fancybox=True, shadow=True)
+    plt.savefig('fex_timeline.png', bbox_inches="tight")
     plt.show()
 
 
     # --------------------------------------------------------------------------
     # task rate
-    plt.figure(figsize=(20,14))
+    plt.figure(figsize=(10,4))
 
     data = session.rate(event=e_get, sampling=0.1)
     x = [e[0] for e in data]
@@ -75,12 +98,15 @@ if __name__ == '__main__':
     x = [e[0] for e in data]
     y = [e[1] for e in data]
 
+    with open('fex_rate.dat', 'w') as fout:
+        for n in range(len(x)):
+            fout.write('%f,%f\n' % (x[n], y[n]))
+
     plt.plot(x, y, label='put')
 
     plt.ylim(bottom=0)
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-          ncol=2, fancybox=True, shadow=True)
-    plt.savefig('rate.svg')
+    plt.legend(ncol=2, fancybox=True, shadow=True)
+    plt.savefig('fex_rate.png', bbox_inches="tight")
     plt.show()
 
 
